@@ -12,7 +12,6 @@ class User(Base):
     created_at = Column(DateTime, default=datetime.utcnow)
 
     google_accounts = relationship("GoogleAccount", back_populates="user", cascade="all, delete-orphan")
-    canvas_accounts = relationship("CanvasAccount", back_populates="user", cascade="all, delete-orphan")
     sent_reminders = relationship("SentReminder", back_populates="user", cascade="all, delete-orphan")
 
 
@@ -29,24 +28,13 @@ class GoogleAccount(Base):
     user = relationship("User", back_populates="google_accounts")
 
 
-class CanvasAccount(Base):
-    __tablename__ = "canvas_accounts"
-
-    id = Column(Integer, primary_key=True, autoincrement=True)
-    discord_user_id = Column(String, ForeignKey("users.discord_user_id"), nullable=False)
-    canvas_url = Column(String, nullable=False)  # e.g., https://canvas.instructure.com
-    api_token = Column(Text, nullable=False)  # encrypted
-
-    user = relationship("User", back_populates="canvas_accounts")
-
-
 class SentReminder(Base):
     __tablename__ = "sent_reminders"
 
     id = Column(Integer, primary_key=True, autoincrement=True)
     discord_user_id = Column(String, ForeignKey("users.discord_user_id"), nullable=False)
-    reminder_type = Column(String, nullable=False)  # 'daily_summary', 'hour_before', 'canvas_daily'
-    event_id = Column(String, nullable=False)  # Google event ID or Canvas assignment ID
+    reminder_type = Column(String, nullable=False)  # 'daily_summary', 'hour_before'
+    event_id = Column(String, nullable=False)  # Google event ID
     scheduled_time = Column(DateTime, nullable=True)
     sent_at = Column(DateTime, default=datetime.utcnow)
 

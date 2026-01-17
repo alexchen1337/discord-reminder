@@ -182,70 +182,6 @@ class CalendarRenderer:
         
         return embed
     
-    @staticmethod
-    def render_assignments_embed(
-        assignments: List[Dict[str, Any]],
-        days: int = 14,
-        start_date: Optional[datetime] = None
-    ) -> discord.Embed:
-        """Render Canvas assignments list"""
-        if start_date is None:
-            start_date = datetime.now()
-        
-        end_date = start_date + timedelta(days=days)
-        date_range = f"{start_date.strftime('%b %d')} - {end_date.strftime('%b %d, %Y')}"
-        
-        embed = discord.Embed(
-            title=f"📚 Canvas Assignments",
-            description=f"**{date_range}**",
-            color=discord.Color.orange()
-        )
-        
-        if not assignments:
-            embed.add_field(name="No assignments", value="*No assignments due in this period*", inline=False)
-            return embed
-        
-        # group by course
-        by_course: Dict[str, List[Dict]] = {}
-        for assignment in assignments:
-            course = assignment.get("course", "Unknown Course")
-            if course not in by_course:
-                by_course[course] = []
-            by_course[course].append(assignment)
-        
-        for course, course_assignments in by_course.items():
-            lines = []
-            for a in sorted(course_assignments, key=lambda x: x.get("due_at", "")):
-                title = a.get("title", "Untitled")[:40]
-                due_at = a.get("due_at")
-                if due_at:
-                    if isinstance(due_at, str):
-                        due_at = datetime.fromisoformat(due_at.replace("Z", "+00:00"))
-                    due_str = due_at.strftime("%b %d, %H:%M")
-                else:
-                    due_str = "No due date"
-                lines.append(f"• {title}\n  └ Due: {due_str}")
-            
-            value = "\n".join(lines[:5])
-            if len(lines) > 5:
-                value += f"\n*...and {len(lines) - 5} more*"
-            
-            embed.add_field(name=course[:50], value=value, inline=False)
-        
-        return embed
-    
-    @staticmethod
-    def render_announcements_embed(announcements: List[Dict[str, Any]]) -> discord.Embed:
-        """Render Canvas announcements list"""
-        embed = discord.Embed(
-            title="📢 New Canvas Announcements",
-            color=discord.Color.blue(),
-            timestamp=datetime.utcnow()
-        )
-        
-        if not announcements:
-            embed.description = "*No new announcements*"
-            return embed
         
         for ann in announcements[:10]:
             course = ann.get("course", "Unknown Course")
@@ -309,30 +245,6 @@ class CalendarRenderer:
             embed.add_field(name="📆 Google Calendar", value=value, inline=False)
         else:
             embed.add_field(name="📆 Google Calendar", value="*No upcoming events*", inline=False)
-        
-        # Canvas assignments
-        if canvas_assignments:
-            assignment_lines = []
-            for a in sorted(canvas_assignments, key=lambda x: x.get("due_at", ""))[:10]:
-                due_at = a.get("due_at")
-                if isinstance(due_at, str):
-                    due_at = datetime.fromisoformat(due_at.replace("Z", "+00:00"))
-                
-                date_str = due_at.strftime("%b %d") if due_at else "?"
-                title = a.get("title", "Untitled")[:30]
-                course = a.get("course", "")[:15]
-                
-                line = f"`{date_str}` {title}"
-                if course:
-                    line += f" ({course})"
-                assignment_lines.append(line)
-            
-            value = "\n".join(assignment_lines)
-            if len(canvas_assignments) > 10:
-                value += f"\n*...and {len(canvas_assignments) - 10} more*"
-            embed.add_field(name="📚 Canvas Assignments", value=value, inline=False)
-        else:
-            embed.add_field(name="📚 Canvas Assignments", value="*No upcoming assignments*", inline=False)
         
         return embed
 

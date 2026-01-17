@@ -1,6 +1,6 @@
 from .calendar_commands import CalendarCommands
-from .canvas_commands import CanvasCommands
 from .link_commands import LinkCommands
+from .help_commands import HelpCommands
 
-__all__ = ["CalendarCommands", "CanvasCommands", "LinkCommands"]
+__all__ = ["CalendarCommands", "LinkCommands", "HelpCommands"]
 

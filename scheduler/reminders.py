@@ -7,9 +7,9 @@ from apscheduler.triggers.cron import CronTrigger
 from apscheduler.triggers.interval import IntervalTrigger
 
 from database import (
-    User, GoogleAccount, CanvasAccount, SentReminder, async_session
+    User, GoogleAccount, SentReminder, async_session
 )
-from integrations import GoogleCalendarClient, CanvasClient
+from integrations import GoogleCalendarClient
 from utils import CalendarRenderer
 import config
 
@@ -19,7 +19,6 @@ class ReminderScheduler:
         self.bot = bot
         self.scheduler = AsyncIOScheduler()
         self.google_client = GoogleCalendarClient()
-        self.canvas_client = CanvasClient()
         self.renderer = CalendarRenderer()
     
     def start(self):
@@ -37,14 +36,6 @@ class ReminderScheduler:
             self.check_hour_before_reminders,
             IntervalTrigger(minutes=config.HOUR_BEFORE_CHECK_INTERVAL),
             id="hour_before_check",
-            replace_existing=True
-        )
-        
-        # check for new Canvas announcements every 30 minutes
-        self.scheduler.add_job(
-            self.check_canvas_announcements,
-            IntervalTrigger(minutes=config.ANNOUNCEMENT_CHECK_INTERVAL),
-            id="announcement_check",
             replace_existing=True
         )
         
@@ -103,25 +94,8 @@ class ReminderScheduler:
             except Exception:
                 pass
         
-        # fetch Canvas assignments
-        result = await session.execute(
-            select(CanvasAccount).where(CanvasAccount.discord_user_id == user_id)
-        )
-        canvas_accounts = result.scalars().all()
-        
-        for account in canvas_accounts:
-            try:
-                assignments = await self.canvas_client.get_assignments(
-                    account.canvas_url,
-                    account.api_token,
-                    days_ahead=config.REMINDER_DAYS_AHEAD
-                )
-                canvas_assignments.extend(assignments)
-            except Exception:
-                pass
-        
         # only send if there's something to report
-        if not google_events and not canvas_assignments:
+        if not google_events:
             return
         
         # get Discord user and send DM
@@ -130,7 +104,7 @@ class ReminderScheduler:
             if discord_user:
                 embed = self.renderer.render_daily_summary_embed(
                     google_events,
-                    canvas_assignments,
+                    [],
                     days=config.REMINDER_DAYS_AHEAD
                 )
                 await discord_user.send(embed=embed)
@@ -227,81 +201,3 @@ class ReminderScheduler:
         except Exception:
             pass
     
-    async def check_canvas_announcements(self):
-        """Check for new Canvas announcements and send notifications"""
-        async with async_session() as session:
-            result = await session.execute(select(CanvasAccount))
-            canvas_accounts = result.scalars().all()
-            
-            for account in canvas_accounts:
-                try:
-                    # check for announcements in the last hour
-                    since = datetime.utcnow() - timedelta(minutes=config.ANNOUNCEMENT_CHECK_INTERVAL + 5)
-                    announcements = await self.canvas_client.get_announcements(
-                        account.canvas_url,
-                        account.api_token,
-                        since=since
-                    )
-                    
-                    for ann in announcements:
-                        await self._send_announcement_notification(
-                            account.discord_user_id,
-                            ann,
-                            session
-                        )
-                    
-                    await session.commit()
-                except Exception:
-                    pass
-    
-    async def _send_announcement_notification(self, user_id: str, announcement: dict, session):
-        """Send notification for a new Canvas announcement"""
-        ann_id = f"canvas_ann_{announcement.get('id')}"
-        
-        # check if already sent
-        result = await session.execute(
-            select(SentReminder).where(
-                SentReminder.discord_user_id == user_id,
-                SentReminder.reminder_type == "announcement",
-                SentReminder.event_id == ann_id
-            )
-        )
-        if result.scalar_one_or_none():
-            return
-        
-        try:
-            discord_user = await self.bot.fetch_user(int(user_id))
-            if discord_user:
-                course = announcement.get("course", "Unknown Course")
-                title = announcement.get("title", "Untitled")
-                message = announcement.get("message", "")[:500]
-                if len(announcement.get("message", "")) > 500:
-                    message += "..."
-                author = announcement.get("author", "Instructor")
-                url = announcement.get("url")
-                
-                embed = discord.Embed(
-                    title=f"📢 New Announcement: {title}",
-                    description=message,
-                    color=discord.Color.blue(),
-                    timestamp=datetime.utcnow()
-                )
-                embed.add_field(name="Course", value=course, inline=True)
-                if author:
-                    embed.add_field(name="Posted by", value=author, inline=True)
-                if url:
-                    embed.add_field(name="Link", value=f"[View in Canvas]({url})", inline=False)
-                
-                await discord_user.send(embed=embed)
-                
-                # mark as sent
-                reminder = SentReminder(
-                    discord_user_id=user_id,
-                    reminder_type="announcement",
-                    event_id=ann_id,
-                )
-                session.add(reminder)
-        except discord.Forbidden:
-            pass
-        except Exception:
-            pass

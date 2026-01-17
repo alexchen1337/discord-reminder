@@ -1,5 +1,5 @@
 from .db import init_db, get_session, engine, async_session
-from .models import Base, User, GoogleAccount, CanvasAccount, SentReminder
+from .models import Base, User, GoogleAccount, SentReminder
 
 __all__ = [
     "init_db",
@@ -9,7 +9,6 @@ __all__ = [
     "Base",
     "User",
     "GoogleAccount",
-    "CanvasAccount",
     "SentReminder",
 ]
 
