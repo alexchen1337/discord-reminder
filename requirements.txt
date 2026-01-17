@@ -1,0 +1,31 @@
+# Discord
+discord.py>=2.3.0
+
+# Google Calendar
+google-auth>=2.23.0
+google-auth-oauthlib>=1.1.0
+google-api-python-client>=2.100.0
+
+# Database
+sqlalchemy>=2.0.0
+asyncpg>=0.29.0
+aiosqlite>=0.19.0
+
+# HTTP
+aiohttp>=3.9.0
+
+# Scheduler
+apscheduler>=3.10.0
+
+# Environment
+python-dotenv>=1.0.0
+
+# Encryption
+cryptography>=41.0.0
+
+# Image generation (calendar rendering)
+pillow>=10.0.0
+
+# Timezone handling
+pytz>=2023.3
+
