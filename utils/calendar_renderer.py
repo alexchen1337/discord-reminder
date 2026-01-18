@@ -211,7 +211,6 @@ class CalendarRenderer:
     @staticmethod
     def render_daily_summary_embed(
         google_events: List[Dict[str, Any]],
-        canvas_assignments: List[Dict[str, Any]],
         days: int = 7
     ) -> discord.Embed:
         """Render daily summary for reminders"""

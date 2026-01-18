@@ -99,7 +99,6 @@ class CalendarCommands(commands.Cog):
     def __init__(self, bot: commands.Bot):
         self.bot = bot
         self.google_client = GoogleCalendarClient()
-        self.canvas_client = CanvasClient()
         self.renderer = CalendarRenderer()
     
     async def _get_all_events(
@@ -134,23 +133,6 @@ class CalendarCommands(commands.Cog):
                         await session.commit()
                 except Exception:
                     pass
-            
-            result = await session.execute(
-                select(CanvasAccount).where(CanvasAccount.discord_user_id == user_id)
-            )
-            canvas_accounts = result.scalars().all()
-            
-            for account in canvas_accounts:
-                try:
-                    assignments = await self.canvas_client.get_all_assignments(
-                        account.canvas_url,
-                        account.api_token,
-                        start_date,
-                        end_date
-                    )
-                    all_events.extend(assignments)
-                except Exception:
-                    pass
         
         return sorted(all_events, key=lambda x: x.get("date", ""))
     
@@ -169,7 +151,7 @@ class CalendarCommands(commands.Cog):
         if not events:
             embed = discord.Embed(
                 title=f"📅 {year}",
-                description="No events found. Link your accounts with `/link_google` or `/link_canvas`",
+                description="No events found. Link your Google Calendar account with `/link_google`",
                 color=discord.Color.gray()
             )
             await interaction.followup.send(embed=embed)

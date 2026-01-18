@@ -70,7 +70,6 @@ class ReminderScheduler:
             return
         
         google_events = []
-        canvas_assignments = []
         
         # fetch Google Calendar events
         result = await session.execute(
@@ -104,7 +103,6 @@ class ReminderScheduler:
             if discord_user:
                 embed = self.renderer.render_daily_summary_embed(
                     google_events,
-                    [],
                     days=config.REMINDER_DAYS_AHEAD
                 )
                 await discord_user.send(embed=embed)
