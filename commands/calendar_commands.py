@@ -4,8 +4,8 @@ from discord.ext import commands
 from datetime import datetime, date, timedelta
 from sqlalchemy import select
 
-from database import GoogleAccount, CanvasAccount, async_session
-from integrations import GoogleCalendarClient, CanvasClient
+from database import GoogleAccount, async_session
+from integrations import GoogleCalendarClient
 from utils import CalendarRenderer
 
 
